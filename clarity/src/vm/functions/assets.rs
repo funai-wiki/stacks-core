@@ -157,6 +157,24 @@ pub fn stx_transfer_consolidated(
     Ok(Value::okay_true())
 }
 
+pub fn stx_infer_consolidated(
+    env: &mut Environment,
+    from: &PrincipalData,
+    infer_out_hash: &BuffData,
+) -> Result<Value> {
+    // loading from/to principals and balances
+    env.add_memory(TypeSignature::PrincipalType.size()? as u64)?;
+    env.add_memory(TypeSignature::PrincipalType.size()? as u64)?;
+    // loading from's locked amount and height
+    // TODO: this does not count the inner stacks block header load, but arguably,
+    // this could be optimized away, so it shouldn't penalize the caller.
+    env.add_memory(STXBalance::unlocked_and_v1_size as u64)?;
+    env.add_memory(STXBalance::unlocked_and_v1_size as u64)?;
+
+    env.register_stx_infer_event(from.clone(), infer_out_hash.clone())?;
+    Ok(Value::okay_infer_hash(infer_out_hash))
+}
+
 pub fn special_stx_transfer(
     args: &[SymbolicExpression],
     env: &mut Environment,

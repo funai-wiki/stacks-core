@@ -2184,6 +2184,7 @@ impl StacksBlockBuilder {
 
         let mut invalidated_txs = vec![];
         let mut to_drop_and_blacklist = vec![];
+        let mut infer_tx_retry_set = HashSet::new();
 
         let deadline = ts_start + u128::from(max_miner_time_ms);
         let mut num_txs = 0;
@@ -2306,6 +2307,11 @@ impl StacksBlockBuilder {
                                 error, ..
                             }) => {
                                 match &error {
+                                    Error::InferTaskNotSuccess => {
+                                        if !infer_tx_retry_set.contains(&txinfo.tx.txid()) {
+                                            infer_tx_retry_set.insert(txinfo.tx.txid());
+                                        }
+                                    }
                                     Error::StacksTransactionSkipped(_) => {}
                                     Error::BlockTooBigError => {
                                         // done mining -- our execution budget is exceeded.
@@ -2349,6 +2355,14 @@ impl StacksBlockBuilder {
                         Ok(Some(result_event))
                     },
                 );
+
+                for txid in &infer_tx_retry_set {
+                    let retry_count = mempool.increase_infer_tx_retry_info(txid)?;
+                    if retry_count >= mempool_settings.infer_tx_max_retry_count {
+                        // drop and blacklist this tx
+                        to_drop_and_blacklist.push(*txid);
+                    }
+                }
 
                 if to_drop_and_blacklist.len() > 0 {
                     let _ = mempool.drop_and_blacklist_txs(&to_drop_and_blacklist);

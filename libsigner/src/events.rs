@@ -68,10 +68,12 @@ pub struct BlockProposalSigners {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SignerEvent {
     /// A miner sent a message over .miners
+    /// The `Option<String>` will contain the miner endpoint to get infer tx output later.
     /// The `Vec<BlockProposalSigners>` will contain any block proposals made by the miner during this StackerDB event.
     /// The `Vec<SignerMessage>` will contain any signer WSTS messages made by the miner while acting as a coordinator.
     /// The `Option<StacksPublicKey>` will contain the message sender's public key if either of the vecs is non-empty.
     MinerMessages(
+        Option<String>,
         Vec<BlockProposalSigners>,
         Vec<SignerMessage>,
         Option<StacksPublicKey>,
@@ -447,7 +449,7 @@ impl TryFrom<StackerDBChunksEvent> for SignerEvent {
                     ));
                 };
             }
-            SignerEvent::MinerMessages(blocks, messages, miner_pk)
+            SignerEvent::MinerMessages(event.miner_endpoint, blocks, messages, miner_pk)
         } else if event.contract_id.name.starts_with(SIGNERS_NAME) && event.contract_id.is_boot() {
             let Some((signer_set, _)) =
                 get_signers_db_signer_set_message_id(event.contract_id.name.as_str())

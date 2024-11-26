@@ -1895,6 +1895,7 @@ impl Relayer {
     pub fn process_uploaded_stackerdb_chunks(
         uploaded_chunks: Vec<StackerDBPushChunkData>,
         event_observer: Option<&dyn StackerDBEventDispatcher>,
+        miner_endpoint: Option<String>,
     ) {
         if let Some(observer) = event_observer {
             let mut all_events: HashMap<QualifiedContractIdentifier, Vec<StackerDBChunkData>> =
@@ -1908,7 +1909,7 @@ impl Relayer {
                 }
             }
             for (contract_id, new_chunks) in all_events.into_iter() {
-                observer.new_stackerdb_chunks(contract_id, new_chunks);
+                observer.new_stackerdb_chunks(contract_id, new_chunks, miner_endpoint.clone());
             }
         }
     }
@@ -1919,6 +1920,7 @@ impl Relayer {
         stackerdb_configs: &HashMap<QualifiedContractIdentifier, StackerDBConfig>,
         sync_results: Vec<StackerDBSyncResult>,
         event_observer: Option<&dyn StackerDBEventDispatcher>,
+        miner_endpoint: Option<String>,
     ) -> Result<(), Error> {
         // sort stacker results by contract, so as to minimize the number of transactions.
         let mut sync_results_map: HashMap<QualifiedContractIdentifier, Vec<StackerDBSyncResult>> =
@@ -1969,7 +1971,7 @@ impl Relayer {
 
         if let Some(observer) = event_observer.as_ref() {
             for (contract_id, new_chunks) in all_events.into_iter() {
-                observer.new_stackerdb_chunks(contract_id, new_chunks);
+                observer.new_stackerdb_chunks(contract_id, new_chunks, miner_endpoint.clone());
             }
         }
         Ok(())
@@ -1982,6 +1984,7 @@ impl Relayer {
         stackerdb_configs: &HashMap<QualifiedContractIdentifier, StackerDBConfig>,
         unhandled_messages: &mut HashMap<NeighborKey, Vec<StacksMessage>>,
         event_observer: Option<&dyn StackerDBEventDispatcher>,
+        miner_endpoint: Option<String>,
     ) -> Result<(), Error> {
         // synthesize StackerDBSyncResults from each chunk
         let mut sync_results = vec![];
@@ -2002,6 +2005,7 @@ impl Relayer {
             stackerdb_configs,
             sync_results,
             event_observer,
+            miner_endpoint,
         )
     }
 
@@ -2025,6 +2029,7 @@ impl Relayer {
         ibd: bool,
         coord_comms: Option<&CoordinatorChannels>,
         event_observer: Option<&dyn RelayEventDispatcher>,
+        miner_endpoint: Option<String>,
     ) -> Result<ProcessedNetReceipts, net_error> {
         let mut num_new_blocks = 0;
         let mut num_new_confirmed_microblocks = 0;
@@ -2168,6 +2173,7 @@ impl Relayer {
         Relayer::process_uploaded_stackerdb_chunks(
             mem::replace(&mut network_result.uploaded_stackerdb_chunks, vec![]),
             event_observer.map(|obs| obs.as_stackerdb_event_dispatcher()),
+            miner_endpoint.clone(),
         );
 
         // store downloaded stacker DB chunks
@@ -2176,6 +2182,7 @@ impl Relayer {
             &network_result.stacker_db_configs,
             mem::replace(&mut network_result.stacker_db_sync_results, vec![]),
             event_observer.map(|obs| obs.as_stackerdb_event_dispatcher()),
+            miner_endpoint.clone(),
         )?;
 
         // store pushed stacker DB chunks
@@ -2184,6 +2191,7 @@ impl Relayer {
             &network_result.stacker_db_configs,
             &mut network_result.unhandled_messages,
             event_observer.map(|obs| obs.as_stackerdb_event_dispatcher()),
+            miner_endpoint.clone(),
         )?;
 
         let receipts = ProcessedNetReceipts {

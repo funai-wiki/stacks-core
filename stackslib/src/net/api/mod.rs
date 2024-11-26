@@ -42,6 +42,7 @@ pub mod getcontractabi;
 pub mod getcontractsrc;
 pub mod getdatavar;
 pub mod getheaders;
+pub mod getinferresult;
 pub mod getinfo;
 pub mod getistraitimplemented;
 pub mod getmapentry;
@@ -68,6 +69,7 @@ pub mod posttransaction;
 
 #[cfg(test)]
 mod tests;
+
 
 impl StacksHttp {
     /// Register all RPC methods.
@@ -127,6 +129,7 @@ impl StacksHttp {
         self.register_rpc_endpoint(poststackerdbchunk::RPCPostStackerDBChunkRequestHandler::new());
         self.register_rpc_endpoint(posttransaction::RPCPostTransactionRequestHandler::new());
         self.register_rpc_endpoint(getstackers::GetStackersRequestHandler::default());
+        self.register_rpc_endpoint(getinferresult::RPCInferResultRequestHandler::new());
     }
 }
 

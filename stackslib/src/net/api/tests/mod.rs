@@ -82,6 +82,7 @@ mod postmempoolquery;
 mod postmicroblock;
 mod poststackerdbchunk;
 mod posttransaction;
+mod getinferresult;
 
 const TEST_CONTRACT: &'static str = "
     (define-trait test-trait

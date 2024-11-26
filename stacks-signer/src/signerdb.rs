@@ -49,6 +49,14 @@ CREATE TABLE IF NOT EXISTS signer_states (
     state TEXT NOT NULL
 )";
 
+const CREATE_BLOCKS_MINER_ENDPOINT_TABLE: &'static str = "\
+CREATE TABLE IF NOT EXISTS blocks_miner_endpoint (
+    reward_cycle INTEGER NOT NULL,
+    signer_signature_hash TEXT NOT NULL,
+    miner_endpoint TEXT NOT NULL,
+    PRIMARY KEY (reward_cycle, signer_signature_hash)
+)";
+
 impl SignerDb {
     /// Create a new `SignerState` instance.
     /// This will create a new SQLite database at the given path
@@ -70,6 +78,10 @@ impl SignerDb {
 
         if !table_exists(&self.db, "signer_states")? {
             self.db.execute(CREATE_SIGNER_STATE_TABLE, NO_PARAMS)?;
+        }
+
+        if !table_exists(&self.db, "blocks_miner_endpoint")? {
+            self.db.execute(CREATE_BLOCKS_MINER_ENDPOINT_TABLE, NO_PARAMS)?;
         }
 
         Ok(())
@@ -152,6 +164,55 @@ impl SignerDb {
                 params![&u64_to_sql(reward_cycle)?, hash.to_string(), &block_json],
             )?;
 
+        Ok(())
+    }
+
+    /// Fetch the miner endpoint for the given block
+    /// `hash` is the `signer_signature_hash` of the block.
+    pub fn miner_endpoint_lookup(
+        &self,
+        reward_cycle: u64,
+        hash: &Sha512Trunc256Sum,
+    ) -> Result<Option<String>, DBError> {
+        let result: Option<String> = query_row(
+            &self.db,
+            "SELECT miner_endpoint FROM blocks_miner_endpoint WHERE reward_cycle = ? AND signer_signature_hash = ?",
+            params![&u64_to_sql(reward_cycle)?, hash.to_string()],
+        )?;
+
+        Ok(result)
+    }
+
+    /// Insert the miner endpoint for the given block
+    /// `miner_endpoint` is the endpoint of the miner who mined the block.
+    /// `hash` is the `signer_signature_hash` of the block.
+    pub fn insert_blocks_miner_endpoint(
+        &mut self,
+        miner_endpoint: &Option<String>,
+        reward_cycle: u64,
+        block_info: &BlockInfo,
+    ) -> Result<(), DBError> {
+        let hash = &block_info.signer_signature_hash();
+        let block_id = &block_info.block.block_id();
+        let signed_over = &block_info.signed_over;
+        debug!(
+            "Inserting blocks_miner_endpoint: miner_endpoint = {:?}, reward_cycle = {reward_cycle}, sighash = {hash}, block_id = {block_id}, signed = {signed_over} vote = {:?}",
+            miner_endpoint,
+            block_info.vote.as_ref().map(|v| {
+                if v.rejected {
+                    "REJECT"
+                } else {
+                    "ACCEPT"
+                }
+            })
+        );
+        if miner_endpoint.is_none() {
+            return Ok(());
+        }
+        self.db.execute(
+            "INSERT OR REPLACE INTO blocks_miner_endpoint (reward_cycle, signer_signature_hash, miner_endpoint) VALUES (?1, ?2, ?3)",
+            params![&u64_to_sql(reward_cycle)?, hash.to_string(), miner_endpoint.clone().unwrap()],
+        )?;
         Ok(())
     }
 }

@@ -70,6 +70,8 @@ impl RunLoop {
 
         self.node.spawn_peer_server();
 
+        self.node.spawn_peer_llm_thread();
+
         // Bootstrap the chain: node will start a new tenure,
         // using the sortition hash from block #1 for generating a VRF.
         let leader = &mut self.node;

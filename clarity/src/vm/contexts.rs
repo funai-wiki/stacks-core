@@ -49,7 +49,7 @@ use crate::vm::types::{
     QualifiedContractIdentifier, TraitIdentifier, TypeSignature, Value,
 };
 use crate::vm::version::ClarityVersion;
-use crate::vm::{ast, eval, is_reserved, stx_transfer_consolidated};
+use crate::vm::{ast, eval, is_reserved, stx_transfer_consolidated, stx_infer_consolidated};
 
 pub const MAX_CONTEXT_DEPTH: u16 = 256;
 
@@ -727,6 +727,16 @@ impl<'a, 'hooks> OwnedEnvironment<'a, 'hooks> {
         })
     }
 
+    pub fn stx_infer(
+        &mut self,
+        from: &PrincipalData,
+        infer_output_hash: &BuffData,
+    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>)> {
+        self.execute_in_env(from.clone(), None, None, |exec_env| {
+            exec_env.stx_infer(from,infer_output_hash)
+        })
+    }
+
     #[cfg(any(test, feature = "testing"))]
     pub fn stx_faucet(&mut self, recipient: &PrincipalData, amount: u128) {
         self.execute_in_env::<_, _, crate::vm::errors::Error>(
@@ -1140,6 +1150,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             }
             self.call_stack.insert(&func_identifier, true);
             let res = self.execute_function_as_transaction(&func, &args, Some(&contract.contract_context), allow_private);
+            info!("Executed contract function: {}", func_identifier.to_string());
             self.call_stack.remove(&func_identifier, true)?;
 
             match res {
@@ -1155,6 +1166,7 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
                             &value
                         )?;
                     }
+                    info!("value: {:?}", value);
                     Ok(value)
                 },
                 Err(e) => Err(e)
@@ -1353,6 +1365,31 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
         }
     }
 
+    pub fn stx_infer(
+        &mut self,
+        from: &PrincipalData,
+        infer_out_hash: &BuffData,
+    ) -> Result<Value> {
+        self.global_context.begin();
+        let result = stx_infer_consolidated(self, from, infer_out_hash);
+        match result {
+            Ok(value) => match value.clone().expect_result()? {
+                Ok(_) => {
+                    self.global_context.commit()?;
+                    Ok(value)
+                }
+                Err(_) => {
+                    self.global_context.roll_back()?;
+                    Err(InterpreterError::InsufficientBalance.into())
+                }
+            },
+            Err(e) => {
+                self.global_context.roll_back()?;
+                Err(e)
+            }
+        }
+    }
+
     pub fn run_as_transaction<F, O, E>(&mut self, f: F) -> std::result::Result<O, E>
     where
         F: FnOnce(&mut Self) -> std::result::Result<O, E>,
@@ -1414,6 +1451,21 @@ impl<'a, 'b, 'hooks> Environment<'a, 'b, 'hooks> {
             memo,
         };
         let event = StacksTransactionEvent::STXEvent(STXEventType::STXTransferEvent(event_data));
+
+        self.push_to_event_batch(event);
+        Ok(())
+    }
+
+    pub fn register_stx_infer_event(
+        &mut self,
+        sender: PrincipalData,
+        infer_out_hash: BuffData,
+    ) -> Result<()> {
+        let event_data = STXInferEventData {
+            sender,
+            infer_out_hash,
+        };
+        let event = StacksTransactionEvent::STXEvent(STXEventType::STXInferEvent(event_data));
 
         self.push_to_event_batch(event);
         Ok(())

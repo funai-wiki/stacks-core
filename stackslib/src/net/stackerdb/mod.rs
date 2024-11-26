@@ -414,6 +414,7 @@ pub trait StackerDBEventDispatcher {
         &self,
         contract_id: QualifiedContractIdentifier,
         chunk_info: Vec<StackerDBChunkData>,
+        miner_endpoint: Option<String>,
     );
 }
 

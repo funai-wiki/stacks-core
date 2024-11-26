@@ -283,6 +283,12 @@ impl StacksMessageCodec for TransactionPayload {
                 write_next(fd, &(TransactionPayloadID::TenureChange as u8))?;
                 tc.consensus_serialize(fd)?;
             }
+            TransactionPayload::Infer(address, userInput, context) => {
+                write_next(fd, &(TransactionPayloadID::Infer as u8))?;
+                write_next(fd, address)?;
+                write_next(fd, userInput)?;
+                write_next(fd, context)?;
+            }
         }
         Ok(())
     }
@@ -374,6 +380,12 @@ impl StacksMessageCodec for TransactionPayload {
             TransactionPayloadID::TenureChange => {
                 let payload: TenureChangePayload = read_next(fd)?;
                 TransactionPayload::TenureChange(payload)
+            }
+            TransactionPayloadID::Infer => {
+                let principal = read_next(fd)?;
+                let user_input: InferLPString = read_next(fd)?;
+                let context: InferLPString = read_next(fd)?;
+                TransactionPayload::Infer(principal, user_input, context)
             }
         };
 
@@ -1699,6 +1711,9 @@ mod test {
                     ..tc.clone()
                 };
                 TransactionPayload::TenureChange(corrupt_tc)
+            }
+            TransactionPayload::Infer(ref addr, ref user_input, ref context) => {
+                TransactionPayload::Infer(addr.clone(), user_input.clone(), context.clone())
             }
         };
         assert!(corrupt_tx_payload.txid() != signed_tx.txid());

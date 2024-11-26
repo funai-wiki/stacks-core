@@ -475,10 +475,10 @@ impl PoxConstants {
             1,
             BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT + POX_SUNSET_START,
             BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT + POX_SUNSET_END,
-            1_000_000,
-            2_000_000,
-            4_000_000,
-            3_000_000,
+            100,
+            105,
+            115,
+            110,
         )
     }
 

@@ -857,6 +857,13 @@ impl Value {
         })
     }
 
+    pub fn okay_infer_hash(infer_out_hash: &BuffData) -> Value {
+        Value::Response(ResponseData {
+            committed: true,
+            data: Box::new(Value::buff_from(infer_out_hash.data.clone()).unwrap()),
+        })
+    }
+
     pub fn err_uint(ecode: u128) -> Value {
         Value::Response(ResponseData {
             committed: false,

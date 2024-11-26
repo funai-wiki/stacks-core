@@ -2721,6 +2721,7 @@ impl RelayerThread {
             signal_mining_blocked(self.globals.get_miner_status());
         }
 
+        let miner_endpoint = self.config.node.miner_endpoint.clone();
         let net_receipts = self.with_chainstate(|relayer_thread, sortdb, chainstate, mempool| {
             relayer_thread
                 .relayer
@@ -2733,6 +2734,7 @@ impl RelayerThread {
                     relayer_thread.globals.sync_comms.get_ibd(),
                     Some(&relayer_thread.globals.coord_comms),
                     Some(&relayer_thread.event_dispatcher),
+                    Some(miner_endpoint),
                 )
                 .expect("BUG: failure processing network results")
         });

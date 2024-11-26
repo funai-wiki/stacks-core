@@ -257,6 +257,7 @@ impl RelayerThread {
                 self.globals.sync_comms.get_ibd(),
                 Some(&self.globals.coord_comms),
                 Some(&self.event_dispatcher),
+                Some(self.config.node.miner_endpoint.clone()),
             )
             .expect("BUG: failure processing network results");
 

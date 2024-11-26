@@ -240,6 +240,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk() {
                     &peer_1_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -247,6 +248,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk() {
                     &peer_1_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -257,6 +259,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk() {
                     &peer_2_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -264,6 +267,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk() {
                     &peer_2_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -365,6 +369,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_1_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -372,6 +377,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_1_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -388,6 +394,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_2_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -395,6 +402,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_2_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -433,6 +441,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_1_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -440,6 +449,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_1_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -450,6 +460,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_2_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -457,6 +468,7 @@ fn test_stackerdb_replica_2_neighbors_1_chunk_stale_view() {
                     &peer_2_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -555,6 +567,7 @@ fn inner_test_stackerdb_replica_2_neighbors_10_chunks(push_only: bool, base_port
                     &peer_1_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -562,6 +575,7 @@ fn inner_test_stackerdb_replica_2_neighbors_10_chunks(push_only: bool, base_port
                     &peer_1_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -572,6 +586,7 @@ fn inner_test_stackerdb_replica_2_neighbors_10_chunks(push_only: bool, base_port
                     &peer_2_db_configs,
                     res.stacker_db_sync_results,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
                 Relayer::process_pushed_stacker_db_chunks(
@@ -579,6 +594,7 @@ fn inner_test_stackerdb_replica_2_neighbors_10_chunks(push_only: bool, base_port
                     &peer_2_db_configs,
                     &mut res.unhandled_messages,
                     None,
+                    Some("127.0.0.1".to_string()),
                 )
                 .unwrap();
             }
@@ -694,6 +710,7 @@ fn inner_test_stackerdb_10_replicas_10_neighbors_line_10_chunks(push_only: bool,
                         &peer_db_configs[i],
                         res.stacker_db_sync_results,
                         None,
+                        Some("127.0.0.1".to_string()),
                     )
                     .unwrap();
                     Relayer::process_pushed_stacker_db_chunks(
@@ -701,6 +718,7 @@ fn inner_test_stackerdb_10_replicas_10_neighbors_line_10_chunks(push_only: bool,
                         &peer_db_configs[i],
                         &mut res.unhandled_messages,
                         None,
+                        Some("127.0.0.1".to_string()),
                     )
                     .unwrap();
                 }

@@ -1979,7 +1979,7 @@ fn test_nakamoto_download_run_2_peers() {
 
             loop {
                 boot_peer
-                    .run_with_ibd(true, Some(&mut boot_dns_client))
+                    .run_with_ibd(true, Some(&mut boot_dns_client), Some("127.0.0.1".to_string()))
                     .unwrap();
 
                 let (stacks_tip_ch, stacks_tip_bhh) =
@@ -2165,7 +2165,7 @@ fn test_nakamoto_unconfirmed_download_run_2_peers() {
 
             loop {
                 boot_peer
-                    .run_with_ibd(true, Some(&mut boot_dns_client))
+                    .run_with_ibd(true, Some(&mut boot_dns_client), Some("127.0.0.1".to_string()))
                     .unwrap();
 
                 let (stacks_tip_ch, stacks_tip_bhh) =

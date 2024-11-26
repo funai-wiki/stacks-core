@@ -19,6 +19,7 @@ use std::io::prelude::*;
 use std::io::{Read, Write};
 use std::ops::{Deref, DerefMut};
 use std::{fmt, io};
+use std::fmt::Formatter;
 
 use clarity::vm::errors::RuntimeErrorType;
 use clarity::vm::representations::{
@@ -50,6 +51,46 @@ guarded_string!(
     RuntimeErrorType,
     RuntimeErrorType::BadNameValue
 );
+
+
+/// printable-ASCII-only string, but encodable.
+/// Note that it cannot be longer than ARRAY_MAX_LEN (4.1 billion bytes)
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct InferLPString(Vec<u8>);
+
+impl StacksMessageCodec for InferLPString {
+    fn consensus_serialize<W: Write>(&self, fd: &mut W) -> Result<(), codec_error> {
+        write_next(fd, &(self.0.len() as u8))?;
+        fd.write_all(self.0.as_slice())
+            .map_err(codec_error::WriteError)?;
+        Ok(())
+    }
+
+    fn consensus_deserialize<R: Read>(fd: &mut R) -> Result<Self, codec_error> {
+        let len_byte: u8 = read_next(fd)?;
+        if len_byte > CLARITY_MAX_STRING_LENGTH {
+            return Err(codec_error::DeserializeError(
+                "Failed to deserialize URL string: too long".to_string(),
+            ));
+        }
+        let mut bytes = vec![0u8; len_byte as usize];
+        fd.read_exact(&mut bytes).map_err(codec_error::ReadError)?;
+
+        Ok(InferLPString(bytes))
+    }
+}
+
+impl fmt::Display for InferLPString {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(String::from_utf8_lossy(&self.0).into_owned().as_str())
+    }
+}
+
+impl fmt::Debug for InferLPString {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(String::from_utf8_lossy(&self.0).into_owned().as_str())
+    }
+}
 
 /// printable-ASCII-only string, but encodable.
 /// Note that it cannot be longer than ARRAY_MAX_LEN (4.1 billion bytes)

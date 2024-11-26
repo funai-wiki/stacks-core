@@ -797,8 +797,9 @@ impl StackerDBEventDispatcher for EventDispatcher {
         &self,
         contract_id: QualifiedContractIdentifier,
         chunks: Vec<StackerDBChunkData>,
+        miner_endpoint: Option<String>,
     ) {
-        self.process_new_stackerdb_chunks(contract_id, chunks);
+        self.process_new_stackerdb_chunks(contract_id, chunks, miner_endpoint)
     }
 }
 
@@ -939,6 +940,7 @@ impl EventDispatcher {
                         }
                     }
                     StacksTransactionEvent::STXEvent(STXEventType::STXTransferEvent(_))
+                    | StacksTransactionEvent::STXEvent(STXEventType::STXInferEvent(_))
                     | StacksTransactionEvent::STXEvent(STXEventType::STXMintEvent(_))
                     | StacksTransactionEvent::STXEvent(STXEventType::STXBurnEvent(_))
                     | StacksTransactionEvent::STXEvent(STXEventType::STXLockEvent(_)) => {
@@ -1275,6 +1277,7 @@ impl EventDispatcher {
         &self,
         contract_id: QualifiedContractIdentifier,
         modified_slots: Vec<StackerDBChunkData>,
+        miner_endpoint: Option<String>,
     ) {
         let interested_observers = self.filter_observers(&self.stackerdb_observers_lookup, false);
 
@@ -1286,6 +1289,7 @@ impl EventDispatcher {
         let event = StackerDBChunksEvent {
             contract_id,
             modified_slots,
+            miner_endpoint,
         };
         let payload = serde_json::to_value(&event)
             .expect("FATAL: failed to serialize StackerDBChunksEvent to JSON");

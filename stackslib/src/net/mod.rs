@@ -2725,6 +2725,7 @@ pub mod test {
             &mut self,
             ibd: bool,
             dns_client: Option<&mut DNSClient>,
+            miner_endpoint: Option<String>
         ) -> Result<ProcessedNetReceipts, net_error> {
             let mut net_result = self.step_with_ibd_and_dns(ibd, dns_client)?;
             let mut sortdb = self.sortdb.take().unwrap();
@@ -2741,6 +2742,7 @@ pub mod test {
                 ibd,
                 None,
                 None,
+                miner_endpoint,
             );
 
             self.sortdb = Some(sortdb);

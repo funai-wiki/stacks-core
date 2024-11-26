@@ -148,7 +148,6 @@ impl RPCPoxInfoData {
             .active_pox_contract(current_burn_height);
 
         let contract_identifier = boot_code_id(pox_contract_name, mainnet);
-        info!("contract_identifier: {:?}", contract_identifier);
         let function = "get-pox-info";
         let cost_track = LimitedCostTracker::new_free();
         let sender = PrincipalData::Standard(StandardPrincipalData::transient());
@@ -486,8 +485,6 @@ impl RPCRequestHandler for RPCPoxInfoRequestHandler {
             node.with_node_state(|network, sortdb, chainstate, _mempool, _rpc_args| {
                 RPCPoxInfoData::from_db(sortdb, chainstate, &tip, network.get_burnchain())
             });
-
-        info!("pox_info_res:{:?}", pox_info_res);
 
         let pox_info = match pox_info_res {
             Ok(pox_info) => pox_info,

@@ -95,6 +95,4 @@ pub struct StackerDBChunksEvent {
     pub contract_id: QualifiedContractIdentifier,
     /// The chunk data for newly-modified slots
     pub modified_slots: Vec<StackerDBChunkData>,
-    /// The miner endpoint for the StackerDB instance
-    pub miner_endpoint: Option<String>,
 }

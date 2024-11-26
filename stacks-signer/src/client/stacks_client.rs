@@ -43,7 +43,6 @@ use stacks_common::debug;
 use stacks_common::types::chainstate::{StacksAddress, StacksPrivateKey, StacksPublicKey};
 use stacks_common::types::StacksEpochId;
 use wsts::curve::point::{Compressed, Point};
-use libllm::InferResult;
 
 use crate::client::{retry_with_exponential_backoff, ClientError};
 use crate::config::GlobalConfig;
@@ -251,27 +250,6 @@ impl StacksClient {
             return Err(ClientError::RequestFailure(response.status()));
         }
         Ok(())
-    }
-
-    /// Retrieve the infer result for the given transaction ID
-    pub fn get_infer_res_with_retry(
-        &self,
-        txid: String,
-        miner_endpoint: String
-    ) -> Result<InferResult, ClientError> {
-        let send_request = || {
-            self.stacks_node_client
-                .get(self.infer_res_path(txid.as_str(), miner_endpoint.as_str()))
-                .send()
-                .map_err(backoff::Error::transient)
-        };
-
-        let response = retry_with_exponential_backoff(send_request)?;
-        if !response.status().is_success() {
-            return Err(ClientError::RequestFailure(response.status()));
-        }
-        let result = response.json::<InferResult>()?;
-        Ok(result)
     }
 
     /// Retrieve the approved DKG aggregate public key for the given reward cycle
@@ -613,10 +591,6 @@ impl StacksClient {
             "{}/v2/contracts/call-read/{contract_addr}/{contract_name}/{function_name}",
             self.http_origin
         )
-    }
-
-    fn infer_res_path(&self, txid: &str, miner_endpoint: &str) -> String {
-        format!("{}/v2/infer_res/{txid}", miner_endpoint)
     }
 
     fn block_proposal_path(&self) -> String {

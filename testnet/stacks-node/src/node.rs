@@ -5,7 +5,6 @@ use std::{env, thread, time};
 
 use clarity::vm::database::BurnStateDB;
 use rand::RngCore;
-use libllm::do_infer;
 use stacks::burnchains::bitcoin::BitcoinNetworkType;
 use stacks::burnchains::db::BurnchainDB;
 use stacks::burnchains::{PoxConstants, Txid};
@@ -30,7 +29,7 @@ use stacks::chainstate::stacks::{
     TransactionAnchorMode, TransactionPayload, TransactionVersion,
 };
 use stacks::core::mempool::MemPoolDB;
-use stacks::core::{STACKS_EPOCH_2_1_MARKER, STACKS_EPOCH_3_0_MARKER};
+use stacks::core::STACKS_EPOCH_2_1_MARKER;
 use stacks::cost_estimates::metrics::UnitMetric;
 use stacks::cost_estimates::UnitEstimator;
 use stacks::net::atlas::{AtlasConfig, AtlasDB, AttachmentInstance};
@@ -51,7 +50,6 @@ use crate::burnchains::make_bitcoin_indexer;
 use crate::genesis_data::USE_TEST_GENESIS_CHAINSTATE;
 use crate::run_loop;
 use crate::run_loop::RegisteredKey;
-use crate::util::sleep_ms;
 
 #[derive(Debug, Clone)]
 pub struct ChainTip {
@@ -390,26 +388,6 @@ impl Node {
             true,
         )
         .unwrap()
-    }
-
-    // This function is used for helium and mocknet.
-    pub fn spawn_peer_llm_thread(&mut self) {
-        let config = self.config.clone();
-
-        let _llm_thread_handle = thread::Builder::new()
-            .name(format!("chain-llm-{}", config.node.rpc_bind))
-            .spawn(move || {
-                debug!("Chain-llm thread start!");
-                loop {
-                    debug!("Chain-llm do_infer");
-                    let _ = do_infer();
-                    sleep_ms(500);
-                }
-                debug!("Chain-llm thread exit!");
-            })
-            .expect("FATAL: failed to spawn chain llm thread");
-
-        info!("Start LLM Thread");
     }
 
     // This function is used for helium and mocknet.
@@ -1065,7 +1043,7 @@ impl Node {
             apparent_sender: self.keychain.get_burnchain_signer(),
             key_block_ptr: key.block_height as u32,
             key_vtxindex: key.op_vtxindex as u16,
-            memo: vec![STACKS_EPOCH_3_0_MARKER],
+            memo: vec![STACKS_EPOCH_2_1_MARKER],
             new_seed: vrf_seed,
             parent_block_ptr,
             parent_vtxindex,

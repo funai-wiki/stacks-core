@@ -275,23 +275,6 @@ pub trait TransactionConnection: ClarityConnection {
         .and_then(|(value, assets, events, _)| Ok((value, assets, events)))
     }
 
-    /// Execute a infer in the current block.
-    fn run_stx_infer(
-        &mut self,
-        from: &PrincipalData,
-        infer_output_hash: &BuffData,
-    ) -> Result<(Value, AssetMap, Vec<StacksTransactionEvent>), Error> {
-        self.with_abort_callback(
-            |vm_env| {
-                vm_env
-                    .stx_infer(from, infer_output_hash)
-                    .map_err(Error::from)
-            },
-            |_, _| false,
-        )
-            .and_then(|(value, assets, events, _)| Ok((value, assets, events)))
-    }
-
     /// Execute a contract call in the current block.
     ///  If an error occurs while processing the transaction, its modifications will be rolled back.
     /// abort_call_back is called with an AssetMap and a ClarityDatabase reference,

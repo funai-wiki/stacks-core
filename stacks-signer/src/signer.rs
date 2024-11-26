@@ -22,8 +22,8 @@ use blockstack_lib::chainstate::burn::ConsensusHashExtensions;
 use blockstack_lib::chainstate::nakamoto::signer_set::NakamotoSigners;
 use blockstack_lib::chainstate::nakamoto::{NakamotoBlock, NakamotoBlockVote};
 use blockstack_lib::chainstate::stacks::boot::SIGNERS_VOTING_FUNCTION_NAME;
-use blockstack_lib::chainstate::stacks::{StacksTransaction, TransactionPayload};
-use blockstack_lib::net::api::postblock_proposal::{BlockValidateResponse, ValidateRejectCode};
+use blockstack_lib::chainstate::stacks::StacksTransaction;
+use blockstack_lib::net::api::postblock_proposal::BlockValidateResponse;
 use hashbrown::HashSet;
 use libsigner::{
     BlockProposalSigners, BlockRejection, BlockResponse, MessageSlotID, RejectCode, SignerEvent,
@@ -31,7 +31,6 @@ use libsigner::{
 };
 use serde_derive::{Deserialize, Serialize};
 use slog::{slog_debug, slog_error, slog_info, slog_warn};
-use tokio::runtime::Runtime;
 use stacks_common::codec::{read_next, StacksMessageCodec};
 use stacks_common::types::chainstate::{ConsensusHash, StacksAddress};
 use stacks_common::types::StacksEpochId;
@@ -590,7 +589,6 @@ impl Signer {
     /// Handle proposed blocks submitted by the miners to stackerdb
     fn handle_proposed_blocks(
         &mut self,
-        miner_endpoint: &Option<String>,
         stacks_client: &StacksClient,
         proposals: &[BlockProposalSigners],
     ) {
@@ -627,12 +625,6 @@ impl Signer {
                         .insert_block(self.reward_cycle, &BlockInfo::new(proposal.block.clone()))
                         .unwrap_or_else(|e| {
                             error!("{self}: Failed to insert block in DB: {e:?}");
-                        });
-                    // Store the miner endpoint for this block
-                    self.signer_db
-                        .insert_blocks_miner_endpoint(miner_endpoint, self.reward_cycle, &BlockInfo::new(proposal.block.clone()))
-                        .unwrap_or_else(|e| {
-                            error!("{self}: Failed to insert miner endpoint in DB: {e:?}");
                         });
                     // Submit the block for validation
                     stacks_client
@@ -802,87 +794,6 @@ impl Signer {
         stacks_client: &StacksClient,
         block: &NakamotoBlock,
     ) -> bool {
-        let mut is_infer_valid = true;
-        let sig_hash = block.header.signer_signature_hash();
-        match  self.signer_db.miner_endpoint_lookup(self.reward_cycle, &sig_hash) {
-            Ok(Some(miner_endpoint)) => {
-                for tx in block.txs.iter() {
-                    match &tx.payload {
-                        TransactionPayload::Infer(from, input, context) => {
-                            let txid = tx.txid().to_string();
-                            let infer_res = stacks_client
-                                .get_infer_res_with_retry(txid.clone(), miner_endpoint.clone());
-                            match infer_res {
-                                Ok(infer_res) => {
-                                    info!("Infer res for tx {txid}: {infer_res:?}");
-                                    if !matches!(infer_res.status, libllm::InferStatus::Success) {
-                                        warn!("Infer res isn't ok for tx {txid}: {infer_res:?}");
-                                        is_infer_valid = false;
-                                        break;
-                                    }
-                                    let output = infer_res.output;
-                                    let user_input = input.to_string();
-                                    let context_str = context.to_string();
-                                    let chat_completion_message = serde_json::from_str(context_str.as_str()).unwrap_or(vec![]);
-                                    let context_messages = if chat_completion_message.is_empty() {
-                                        None
-                                    } else {
-                                        Some(chat_completion_message)
-                                    };
-                                    let rt = Runtime::new().unwrap();
-
-                                    let result = rt.block_on(async {
-                                        let infer_check_res = libllm::infer_check(user_input.as_str(),
-                                                                                  output.as_str(),
-                                                                                  context_messages).await.unwrap_or(libllm::INFER_CHECK_FAIL);
-                                        if infer_check_res == libllm::INFER_CHECK_FAIL {
-                                            warn!("Infer check failed for tx {txid}");
-                                            false
-                                        } else {
-                                            info!("Infer check passed for tx {txid}");
-                                            true
-                                        }
-                                    });
-                                    if !result {
-                                        is_infer_valid = false;
-                                        break;
-                                    }
-                                }
-                                Err(e) => {
-                                    error!("{self}: Failed to get infer res for tx {txid}: {e:?}");
-                                    is_infer_valid = false;
-                                    break;
-                                }
-                            }
-                        }
-                        _ => {} // just ignore non-infer tx
-                    }
-                }
-            }
-            Ok(None) => {
-                warn!("{self}: No miner endpoint found for block {sig_hash}. Not sending miner endpoint info to signer-db.");
-                is_infer_valid = false;
-            }
-            Err(e) => {
-                error!("{self}: Failed to connect to signer DB: {e:?}");
-                is_infer_valid = false;
-            }
-        }
-        if !is_infer_valid {
-            debug!("{self}: Broadcasting a block rejection due to failed infer check...");
-            let block_rejection = BlockRejection::new(
-                block.header.signer_signature_hash(),
-                RejectCode::ValidationFailed(ValidateRejectCode::BadTransaction),
-            );
-            // Submit signature result to miners to observe
-            if let Err(e) = self
-                .stackerdb
-                .send_message_with_retry(block_rejection.into())
-            {
-                warn!("{self}: Failed to send block rejection to stacker-db: {e:?}",);
-            }
-            return is_infer_valid;
-        }
         if self.approved_aggregate_public_key.is_some() {
             // We do not enforce a block contain any transactions except the aggregate votes when it is NOT already set
             // TODO: should be only allow special cased transactions during prepare phase before a key is set?
@@ -919,9 +830,8 @@ impl Signer {
                 {
                     warn!("{self}: Failed to send block rejection to stacker-db: {e:?}",);
                 }
-                return is_valid;
             }
-            is_valid && is_infer_valid
+            is_valid
         } else {
             // Failed to connect to the stacks node to get transactions. Cannot validate the block. Reject it.
             debug!("{self}: Broadcasting a block rejection due to signer connectivity issues...",);
@@ -1455,7 +1365,7 @@ impl Signer {
                 );
                 self.handle_signer_messages(stacks_client, res, messages, current_reward_cycle);
             }
-            Some(SignerEvent::MinerMessages(miner_endpoint, blocks, messages, miner_key)) => {
+            Some(SignerEvent::MinerMessages(blocks, messages, miner_key)) => {
                 if let Some(miner_key) = miner_key {
                     let miner_key = PublicKey::try_from(miner_key.to_bytes_compressed().as_slice())
                         .expect("FATAL: could not convert from StacksPublicKey to PublicKey");
@@ -1473,7 +1383,7 @@ impl Signer {
                     "miner_key" => ?miner_key,
                 );
                 self.handle_signer_messages(stacks_client, res, messages, current_reward_cycle);
-                self.handle_proposed_blocks(miner_endpoint, stacks_client, blocks);
+                self.handle_proposed_blocks(stacks_client, blocks);
             }
             Some(SignerEvent::StatusCheck) => {
                 debug!("{self}: Received a status check event.")

@@ -15,8 +15,7 @@ use stacks::chainstate::burn::operations::{
 use stacks::chainstate::burn::BlockSnapshot;
 use stacks::core::{
     StacksEpoch, StacksEpochId, PEER_VERSION_EPOCH_2_0, PEER_VERSION_EPOCH_2_05,
-    PEER_VERSION_EPOCH_2_1, PEER_VERSION_EPOCH_2_2, PEER_VERSION_EPOCH_2_3, PEER_VERSION_EPOCH_2_4,
-    PEER_VERSION_EPOCH_2_5, PEER_VERSION_EPOCH_3_0, STACKS_EPOCH_MAX,
+    PEER_VERSION_EPOCH_2_1, STACKS_EPOCH_MAX,
 };
 use stacks_common::types::chainstate::{BurnchainHeaderHash, PoxId};
 use stacks_common::util::get_epoch_time_secs;
@@ -121,45 +120,10 @@ impl BurnchainController for MocknetController {
                 StacksEpoch {
                     epoch_id: StacksEpochId::Epoch21,
                     start_height: 2,
-                    end_height: 3,
+                    end_height: STACKS_EPOCH_MAX,
                     block_limit: ExecutionCost::max_value(),
                     network_epoch: PEER_VERSION_EPOCH_2_1,
                 },
-                StacksEpoch {
-                    epoch_id: StacksEpochId::Epoch22,
-                    start_height: 3,
-                    end_height: 4,
-                    block_limit: ExecutionCost::max_value(),
-                    network_epoch: PEER_VERSION_EPOCH_2_2,
-                },
-                StacksEpoch {
-                    epoch_id: StacksEpochId::Epoch23,
-                    start_height: 4,
-                    end_height: 5,
-                    block_limit: ExecutionCost::max_value(),
-                    network_epoch: PEER_VERSION_EPOCH_2_3,
-                },
-                StacksEpoch {
-                    epoch_id: StacksEpochId::Epoch24,
-                    start_height: 5,
-                    end_height: 6,
-                    block_limit: ExecutionCost::max_value(),
-                    network_epoch: PEER_VERSION_EPOCH_2_4,
-                },
-                StacksEpoch {
-                    epoch_id: StacksEpochId::Epoch25,
-                    start_height: 6,
-                    end_height: STACKS_EPOCH_MAX,
-                    block_limit: ExecutionCost::max_value(),
-                    network_epoch: PEER_VERSION_EPOCH_2_5,
-                },
-                // StacksEpoch {
-                //     epoch_id: StacksEpochId::Epoch30,
-                //     start_height: 7,
-                //     end_height: STACKS_EPOCH_MAX,
-                //     block_limit: ExecutionCost::max_value(),
-                //     network_epoch: PEER_VERSION_EPOCH_3_0,
-                // },
             ],
         }
     }

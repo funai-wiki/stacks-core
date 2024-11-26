@@ -74,7 +74,7 @@ use crate::vm::errors::{
     CheckErrors, Error, InterpreterError, InterpreterResult as Result, RuntimeErrorType,
 };
 use crate::vm::functions::define::DefineResult;
-pub use crate::vm::functions::{stx_infer_consolidated, stx_transfer_consolidated};
+pub use crate::vm::functions::stx_transfer_consolidated;
 pub use crate::vm::representations::{
     ClarityName, ContractName, SymbolicExpression, SymbolicExpressionType,
 };

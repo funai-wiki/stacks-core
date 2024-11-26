@@ -32,9 +32,7 @@ use rusqlite::{
     Connection, Error as SqliteError, OpenFlags, OptionalExtension, Row, Rows, Transaction,
     NO_PARAMS,
 };
-use siphasher::sip::SipHasher;
-use libllm::{InferStatus, query_hash};
-// this is SipHash-2-4
+use siphasher::sip::SipHasher; // this is SipHash-2-4
 use stacks_common::codec::{
     read_next, write_next, Error as codec_error, StacksMessageCodec, MAX_MESSAGE_LEN,
 };
@@ -402,13 +400,6 @@ pub trait MemPoolEventDispatcher {
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct InferTxRetryInfo {
-    pub txid: Txid,
-    pub retry_count: u64,
-    pub last_retry_time: u64,
-}
-
-#[derive(Debug, PartialEq, Clone)]
 pub struct MemPoolTxInfo {
     pub tx: StacksTransaction,
     pub metadata: MemPoolTxMetadata,
@@ -461,7 +452,6 @@ pub enum MemPoolWalkTxTypes {
     TokenTransfer,
     SmartContract,
     ContractCall,
-    Infer,
 }
 
 impl FromStr for MemPoolWalkTxTypes {
@@ -490,7 +480,6 @@ impl MemPoolWalkTxTypes {
             MemPoolWalkTxTypes::TokenTransfer,
             MemPoolWalkTxTypes::SmartContract,
             MemPoolWalkTxTypes::ContractCall,
-            MemPoolWalkTxTypes::Infer,
         ]
         .into_iter()
         .collect()
@@ -519,8 +508,6 @@ pub struct MemPoolWalkSettings {
     pub txs_to_consider: HashSet<MemPoolWalkTxTypes>,
     /// Origins for transactions that we'll consider
     pub filter_origins: HashSet<StacksAddress>,
-    /// infer tx max retry count
-    pub infer_tx_max_retry_count: u64,
 }
 
 impl MemPoolWalkSettings {
@@ -534,12 +521,10 @@ impl MemPoolWalkSettings {
                 MemPoolWalkTxTypes::TokenTransfer,
                 MemPoolWalkTxTypes::SmartContract,
                 MemPoolWalkTxTypes::ContractCall,
-                MemPoolWalkTxTypes::Infer,
             ]
             .into_iter()
             .collect(),
             filter_origins: HashSet::new(),
-            infer_tx_max_retry_count: 5,
         }
     }
     pub fn zero() -> MemPoolWalkSettings {
@@ -552,12 +537,10 @@ impl MemPoolWalkSettings {
                 MemPoolWalkTxTypes::TokenTransfer,
                 MemPoolWalkTxTypes::SmartContract,
                 MemPoolWalkTxTypes::ContractCall,
-                MemPoolWalkTxTypes::Infer,
             ]
             .into_iter()
             .collect(),
             filter_origins: HashSet::new(),
-            infer_tx_max_retry_count: 5,
         }
     }
 }
@@ -620,20 +603,6 @@ impl FromRow<MemPoolTxInfo> for MemPoolTxInfo {
     }
 }
 
-impl FromRow<InferTxRetryInfo> for InferTxRetryInfo {
-    fn from_row<'a>(row: &'a Row) -> Result<InferTxRetryInfo, db_error> {
-        let txid = Txid::from_column(row, "txid")?;
-        let retry_count = u64::from_column(row, "retry_count")?;
-        let last_retry_time = u64::from_column(row, "last_retry_time")?;
-
-        Ok(InferTxRetryInfo {
-            txid,
-            retry_count,
-            last_retry_time,
-        })
-    }
-}
-
 impl FromRow<MemPoolTxInfoPartial> for MemPoolTxInfoPartial {
     fn from_row<'a>(row: &'a Row) -> Result<MemPoolTxInfoPartial, db_error> {
         let txid = Txid::from_column(row, "txid")?;
@@ -685,15 +654,6 @@ const MEMPOOL_INITIAL_SCHEMA: &'static [&'static str] = &[r#"
         PRIMARY KEY (txid),
         UNIQUE (origin_address, origin_nonce),
         UNIQUE (sponsor_address,sponsor_nonce)
-    );
-    "#,
-    r#"
-    CREATE TABLE infer_tx_retry_info(
-        txid TEXT NOT NULL,
-        retry_count INTEGER NOT NULL,
-        last_retry_time INTEGER NOT NULL,
-        PRIMARY KEY (txid),
-        FOREIGN KEY (txid) REFERENCES mempool (txid) ON DELETE CASCADE ON UPDATE CASCADE
     );
     "#];
 
@@ -1835,48 +1795,6 @@ impl MemPoolDB {
                         .txs_to_consider
                         .contains(&MemPoolWalkTxTypes::ContractCall),
                 ),
-                TransactionPayload::Infer(ref from, ref userInput, ref context) => {
-                    let mut settings_do_consider = settings
-                        .txs_to_consider
-                        .contains(&MemPoolWalkTxTypes::Infer);
-                    let infer_task_res = libllm::query_hash(tx_info.tx.txid().to_hex());
-                    let infer_task_done = if let Ok(res) = infer_task_res {
-                        match res.status {
-                            InferStatus::Success => true,
-                            InferStatus::NotFound => {
-                                let txid_str = tx_info.tx.txid().to_hex();
-                                let user_input = userInput.to_string();
-                                let context_str = context.to_string();
-                                let chat_completion_message = serde_json::from_str(context_str.as_str()).unwrap_or(vec![]);
-                                let context_messages = if chat_completion_message.is_empty() {
-                                    None
-                                } else {
-                                    Some(chat_completion_message)
-                                };
-                                let submit_infer_res = libllm::infer_chain(txid_str.clone(), user_input.as_str(), context_messages);
-                                match submit_infer_res {
-                                    Ok(_) => {
-                                        let msg = format!("Infer task not found, submitted new infer task, txid:{:?}", txid_str);
-                                        info!("{}", &msg);
-                                    }
-                                    Err(e) => {
-                                        let msg = format!("Infer task not found, failed to submit new infer task, txid:{:?}, error:{:?}", txid_str, e);
-                                        warn!("{}", &msg);
-                                    }
-                                }
-                                false
-                            }
-                            _ => false,
-                        }
-                    } else {
-                        false
-                    };
-
-                    (
-                        "Infer".to_string(),
-                        settings_do_consider && infer_task_done,
-                    )
-                }
                 _ => ("".to_string(), true),
             };
             if !do_consider {
@@ -2656,34 +2574,6 @@ impl MemPoolDB {
             get_epoch_time_secs(),
             self.blacklist_timeout,
         )
-    }
-
-    // increase the retry count for a infer transaction
-    pub fn increase_infer_tx_retry_info(&mut self, txid: &Txid) -> Result<u64, db_error> {
-        let mempool_tx = self.tx_begin()?;
-        let retry_count = MemPoolDB::inner_increase_infer_tx_retry_info(&mempool_tx, txid)?;
-        mempool_tx.commit()?;
-        Ok(retry_count)
-    }
-
-    fn inner_increase_infer_tx_retry_info<'a>(tx: &DBTx<'a>, txid: &Txid) -> Result<u64, db_error> {
-        let sql = "SELECT * FROM infer_tx_retry_info WHERE txid = ?";
-        let info: Option<InferTxRetryInfo> = query_row(tx, sql, &[txid]).unwrap();
-        let mut retry_count: u64 = 1;
-        match info {
-            Some(mut info) => {
-                retry_count = info.retry_count + 1;
-                let sql = "UPDATE infer_tx_retry_info SET retry_count = ?1, last_retry_time = ?2 WHERE txid = ?3";
-                let args: &[&dyn ToSql] = &[&u64_to_sql(retry_count)?, &u64_to_sql(get_epoch_time_secs())?, txid];
-                tx.execute(sql, args)?;
-            }
-            None => {
-                let sql = "INSERT INTO infer_tx_retry_info (txid, retry_count, last_retry_time) VALUES (?1, ?2, ?3)";
-                let args: &[&dyn ToSql] = &[txid, &u64_to_sql(retry_count)?, &u64_to_sql(get_epoch_time_secs())?];
-                tx.execute(sql, args)?;
-            }
-        }
-        Ok(retry_count)
     }
 
     /// Inner code body for dropping transactions.

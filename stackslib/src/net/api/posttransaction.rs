@@ -246,36 +246,6 @@ impl RPCRequestHandler for RPCPostTransactionRequestHandler {
                 ));
             };
 
-            match tx.payload {
-                TransactionPayload::Infer(ref from, ref userInput, ref context) => { // submit infer task to local llm server if the tx type is infer
-                    let txid_str = txid.to_hex();
-                    let user_input = userInput.to_string();
-                    let context_str = context.to_string();
-                    let chat_completion_message = serde_json::from_str(context_str.as_str()).unwrap_or(vec![]);
-                    let context_messages = if chat_completion_message.is_empty() {
-                        None
-                    } else {
-                        Some(chat_completion_message)
-                    };
-                    let submit_infer_res = libllm::infer_chain(txid_str.clone(), user_input.as_str(), context_messages);
-                    match submit_infer_res {
-                        Ok(infer_res) => {
-                            debug!("Infer result: {:?}", infer_res);
-                        }
-
-                        Err(e) => {
-                            let err_msg = format!("tx:{:?} infer failed:{:?}", txid_str, e.to_string());
-                            error!("{}", err_msg);
-                            return Err(StacksHttpResponse::new_error(
-                                &preamble,
-                                &HttpBadRequest::new(err_msg),
-                            ));
-                        }
-                    }
-                }
-                _ => {} // otherwise ignore
-            }
-
             // store attachment as well, if it's part of a contract-call
             if let Some(ref attachment) = attachment_opt {
                 if let TransactionPayload::ContractCall(ref contract_call) = tx.payload {

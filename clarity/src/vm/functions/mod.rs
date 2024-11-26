@@ -28,7 +28,7 @@ use crate::vm::errors::{
     check_argument_count, check_arguments_at_least, CheckErrors, Error,
     InterpreterResult as Result, RuntimeErrorType, ShortReturnType,
 };
-pub use crate::vm::functions::assets::{stx_infer_consolidated, stx_transfer_consolidated};
+pub use crate::vm::functions::assets::stx_transfer_consolidated;
 use crate::vm::representations::SymbolicExpressionType::{Atom, List};
 use crate::vm::representations::{ClarityName, SymbolicExpression, SymbolicExpressionType};
 use crate::vm::types::{

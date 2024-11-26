@@ -395,11 +395,10 @@ impl<'a> StackerDBTx<'a> {
         contract: &QualifiedContractIdentifier,
         chunk: StackerDBChunkData,
         dispatcher: &ED,
-        miner_endpoint: Option<String>,
     ) -> Result<(), net_error> {
         self.try_replace_chunk(contract, &chunk.get_slot_metadata(), &chunk.data)?;
         self.commit()?;
-        dispatcher.new_stackerdb_chunks(contract.clone(), vec![chunk], miner_endpoint);
+        dispatcher.new_stackerdb_chunks(contract.clone(), vec![chunk]);
         Ok(())
     }
 

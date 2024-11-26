@@ -6683,7 +6683,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -6702,7 +6701,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -6872,7 +6870,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -6891,7 +6888,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -7078,7 +7074,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -7097,7 +7092,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -7264,7 +7258,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();
@@ -7283,7 +7276,6 @@ mod test {
                             false,
                             None,
                             None,
-                            Some("127.0.0.1".to_string()),
                         )
                     })
                     .unwrap();

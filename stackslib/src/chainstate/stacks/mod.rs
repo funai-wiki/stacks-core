@@ -57,7 +57,7 @@ use crate::chainstate::stacks::index::Error as marf_error;
 use crate::clarity_vm::clarity::Error as clarity_error;
 use crate::net::Error as net_error;
 use crate::util_lib::db::{DBConn, Error as db_error};
-use crate::util_lib::strings::{InferLPString, StacksString};
+use crate::util_lib::strings::StacksString;
 
 pub mod address;
 pub mod auth;
@@ -128,7 +128,6 @@ pub enum Error {
     /// This error indicates a Epoch2 block attempted to build off of a Nakamoto block.
     InvalidChildOfNakomotoBlock,
     NoRegisteredSigners(u64),
-    InferTaskNotSuccess,
 }
 
 impl From<marf_error> for Error {
@@ -225,9 +224,6 @@ impl fmt::Display for Error {
             Error::NoRegisteredSigners(reward_cycle) => {
                 write!(f, "No registered signers for reward cycle {reward_cycle}")
             }
-            Error::InferTaskNotSuccess => {
-                write!(f, "Infer task not success")
-            }
         }
     }
 }
@@ -272,7 +268,6 @@ impl error::Error for Error {
             Error::InvalidChildOfNakomotoBlock => None,
             Error::ExpectedTenureChange => None,
             Error::NoRegisteredSigners(_) => None,
-            Error::InferTaskNotSuccess => None,
         }
     }
 }
@@ -317,7 +312,6 @@ impl Error {
             Error::InvalidChildOfNakomotoBlock => "InvalidChildOfNakomotoBlock",
             Error::ExpectedTenureChange => "ExpectedTenureChange",
             Error::NoRegisteredSigners(_) => "NoRegisteredSigners",
-            Error::InferTaskNotSuccess => "InferTaskNotSuccess",
         }
     }
 
@@ -781,7 +775,6 @@ pub enum TransactionPayload {
     PoisonMicroblock(StacksMicroblockHeader, StacksMicroblockHeader),
     Coinbase(CoinbasePayload, Option<PrincipalData>, Option<VRFProof>),
     TenureChange(TenureChangePayload),
-    Infer(PrincipalData, InferLPString, InferLPString), // inferUserAddress, userInput, context
 }
 
 impl TransactionPayload {
@@ -808,7 +801,6 @@ impl TransactionPayload {
                 TenureChangeCause::BlockFound => "TenureChange(BlockFound)",
                 TenureChangeCause::Extended => "TenureChange(Extension)",
             },
-            TransactionPayload::Infer(..) => "Infer",
         }
     }
 }
@@ -824,8 +816,7 @@ define_u8_enum!(TransactionPayloadID {
     VersionedSmartContract = 6,
     TenureChange = 7,
     // has a VRF proof, and may have an alt principal
-    NakamotoCoinbase = 8,
-    Infer = 9
+    NakamotoCoinbase = 8
 });
 
 /// Encoding of an asset type identifier

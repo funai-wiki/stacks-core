@@ -100,26 +100,6 @@ impl StacksTransactionReceipt {
         }
     }
 
-    pub fn from_infer(
-        tx: StacksTransaction,
-        events: Vec<StacksTransactionEvent>,
-        result: Value,
-        cost: ExecutionCost,
-    ) -> StacksTransactionReceipt {
-        StacksTransactionReceipt {
-            events,
-            result,
-            stx_burned: 0,
-            post_condition_aborted: false,
-            contract_analysis: None,
-            transaction: tx.into(),
-            execution_cost: cost,
-            microblock_header: None,
-            tx_index: 0,
-            vm_error: None,
-        }
-    }
-
     pub fn from_contract_call(
         tx: StacksTransaction,
         events: Vec<StacksTransactionEvent>,
@@ -1455,60 +1435,6 @@ impl StacksChainState {
 
                 let receipt = StacksTransactionReceipt::from_tenure_change(tx.clone());
                 Ok(receipt)
-            }
-            TransactionPayload::Infer(ref from, ref userInput, ref context) => {
-                if tx.post_conditions.len() > 0 {
-                    let msg = format!("Invalid Stacks transaction: Infer transactions do not support post-conditions");
-                    warn!("{}", &msg);
-
-                    return Err(Error::InvalidStacksTransaction(msg, false));
-                }
-
-                let infer_res = libllm::query_hash(tx.txid().to_hex());
-
-                if let Ok(res) = infer_res {
-                    return match res.status {
-                        libllm::InferStatus::Success => {
-                            let infer_output_hash_bytes = hex::decode(res.output_hash)
-                                .map_err(|e| Error::InvalidStacksTransaction(e.to_string(), false))?;
-                            let cost_before = clarity_tx.cost_so_far();
-                            let (value, _asset_map, events) = clarity_tx.run_stx_infer(
-                                from,
-                                &BuffData {
-                                    data: infer_output_hash_bytes,
-                                },
-                            )
-                                .map_err(Error::ClarityError)?;
-
-                            let mut total_cost = clarity_tx.cost_so_far();
-                            total_cost
-                                .sub(&cost_before)
-                                .expect("BUG: total block cost decreased");
-
-                            let receipt = StacksTransactionReceipt::from_infer(
-                                tx.clone(),
-                                events,
-                                value,
-                                total_cost,
-                            );
-                            Ok(receipt)
-                        }
-                        libllm::InferStatus::NotFound => { //  theoretically, this should not happen
-                            let msg = format!("Infer task not found,res:{:?}", res);
-                            warn!("{}", &msg);
-                            Err(Error::InferTaskNotSuccess)
-                        }
-                        libllm::InferStatus::Created | libllm::InferStatus::InProgress |  libllm::InferStatus::Failure => {
-                            let msg = format!("Infer failed,res:{:?}", res);
-                            warn!("{}", &msg);
-                            Err(Error::InferTaskNotSuccess)
-                        }
-                    };
-                } else { // failed to query infer task status
-                    let msg = format!("Infer failed,res:{:?}", infer_res.err());
-                    warn!("{}", &msg);
-                    Err(Error::NetError(net_error::DeserializeError(msg)))
-                }
             }
         }
     }

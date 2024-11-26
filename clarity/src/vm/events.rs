@@ -119,13 +119,6 @@ impl StacksTransactionEvent {
                 "type": "ft_burn_event",
                 "ft_burn_event": event_data.json_serialize()
             }),
-            StacksTransactionEvent::STXEvent(STXEventType::STXInferEvent(event_data)) => json!({
-                "txid": format!("0x{:?}", txid),
-                "event_index": event_index,
-                "committed": committed,
-                "type": "stx_infer_event",
-                "stx_infer_event": event_data.json_serialize()
-            }),
         };
         Ok(out)
     }
@@ -137,7 +130,6 @@ pub enum STXEventType {
     STXMintEvent(STXMintEventData),
     STXBurnEvent(STXBurnEventData),
     STXLockEvent(STXLockEventData),
-    STXInferEvent(STXInferEventData),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -169,21 +161,6 @@ impl STXTransferEventData {
             "recipient": format!("{}",self.recipient),
             "amount": format!("{}", self.amount),
             "memo": format!("{}", self.memo),
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct STXInferEventData {
-    pub sender: PrincipalData,
-    pub infer_out_hash: BuffData,
-}
-
-impl STXInferEventData {
-    pub fn json_serialize(&self) -> serde_json::Value {
-        json!({
-            "sender": format!("{}",self.sender),
-            "infer_out_hash": format!("{}", self.infer_out_hash),
         })
     }
 }

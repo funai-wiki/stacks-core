@@ -31,8 +31,6 @@ name = "blockstack-cli"
 path = "src/blockstack_cli.rs"
 
 [dependencies]
-hex = "0.4"
-futures = "0.3"
 rand = { workspace = true }
 rand_core = { workspace = true }
 rand_chacha = { workspace = true }
@@ -56,7 +54,6 @@ libc = "0.2.82"
 clarity = { path = "../clarity" }
 stacks-common = { path = "../stacks-common" }
 pox-locking = { path = "../pox-locking" }
-libllm = { path = "../libllm" }
 libstackerdb = { path = "../libstackerdb" }
 siphasher = "0.3.7"
 wsts = { workspace = true }

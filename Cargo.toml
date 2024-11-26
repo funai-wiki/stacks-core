@@ -8,7 +8,6 @@ members = [
     "stx-genesis",
     "libstackerdb",
     "contrib/tools/relay-server",
-    "libllm",
     "libsigner",
     "stacks-signer",
     "testnet/stacks-node"]

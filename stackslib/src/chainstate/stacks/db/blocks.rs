@@ -6753,9 +6753,6 @@ impl StacksChainState {
 
         // 6: payload-specific checks
         match &tx.payload {
-            TransactionPayload::Infer(from, user_input, context) => {
-                // TODO do some infer check
-            }
             TransactionPayload::TokenTransfer(addr, amount, _memo) => {
                 // version byte matches?
                 if !StacksChainState::is_valid_address_version(

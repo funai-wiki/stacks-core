@@ -1,5 +1,5 @@
 [node]
-working_dir = "/Users/bj89200ml/Documents/llm_chain_local"
+working_dir = "/usr/local/data/llm_chain_local"
 rpc_bind = "0.0.0.0:20443"
 p2p_bind = "0.0.0.0:20444"
 seed = "ad552104f8aec1dbf83d6d18c2fb7398695a6fae198fedf241848aeb8ea3c19b01"
@@ -11,7 +11,7 @@ miner_endpoint = "http://127.0.0.1:20443"
 
 [burnchain]
 chain = "bitcoin"
-mode = "neon"
+mode = "xenon"
 peer_host = "34.87.21.99"
 username = "berry"
 password = "123456"

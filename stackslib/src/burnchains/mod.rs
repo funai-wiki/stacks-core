@@ -128,7 +128,7 @@ impl BurnchainParameters {
             first_block_hash: BurnchainHeaderHash::from_hex(BITCOIN_TESTNET_FIRST_BLOCK_HASH)
                 .unwrap(),
             first_block_timestamp: BITCOIN_TESTNET_FIRST_BLOCK_TIMESTAMP,
-            initial_reward_start_block: BITCOIN_TESTNET_FIRST_BLOCK_HEIGHT - 10_000,
+            initial_reward_start_block: BITCOIN_TESTNET_FIRST_BLOCK_HEIGHT,
         }
     }
 

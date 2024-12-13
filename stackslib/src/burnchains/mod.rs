@@ -122,7 +122,7 @@ impl BurnchainParameters {
             chain_name: "bitcoin".to_string(),
             network_name: BITCOIN_TESTNET_NAME.to_string(),
             network_id: BITCOIN_NETWORK_ID_TESTNET,
-            stable_confirmations: 7,
+            stable_confirmations: 1,
             consensus_hash_lifetime: 24,
             first_block_height: BITCOIN_TESTNET_FIRST_BLOCK_HEIGHT,
             first_block_hash: BurnchainHeaderHash::from_hex(BITCOIN_TESTNET_FIRST_BLOCK_HASH)
@@ -450,19 +450,17 @@ impl PoxConstants {
 
     pub fn testnet_default() -> PoxConstants {
         PoxConstants::new(
-            POX_REWARD_CYCLE_LENGTH / 2,   // 1050
-            POX_PREPARE_WINDOW_LENGTH / 2, // 50
-            40,
-            12,
+            5,
+            3,
             2,
-            BITCOIN_TESTNET_FIRST_BLOCK_HEIGHT + POX_SUNSET_START,
-            BITCOIN_TESTNET_FIRST_BLOCK_HEIGHT + POX_SUNSET_END,
-            POX_V1_TESTNET_EARLY_UNLOCK_HEIGHT,
-            POX_V2_TESTNET_EARLY_UNLOCK_HEIGHT,
-            POX_V3_TESTNET_EARLY_UNLOCK_HEIGHT,
-            BITCOIN_TESTNET_STACKS_24_BURN_HEIGHT
-                .try_into()
-                .expect("Epoch transition height must be <= u32::MAX"),
+            3333333333333333,
+            1,
+            BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT + POX_SUNSET_START,
+            BITCOIN_REGTEST_FIRST_BLOCK_HEIGHT + POX_SUNSET_END,
+            100,
+            105,
+            115,
+            110,
         ) // total liquid supply is 40000000000000000 µSTX
     }
 
